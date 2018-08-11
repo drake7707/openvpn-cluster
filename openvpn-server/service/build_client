@@ -1,0 +1,87 @@
+#!/bin/bash
+
+client_name=$1
+client_type=$2
+
+#worker_ip_base_address=5.0.0.0
+
+cd /data
+
+
+# Build the client pki
+/usr/share/easy-rsa/easyrsa build-client-full ${client_name} nopass
+# And generate the conf file
+/service/build_config client ${client_name}
+
+function helper::ip2int()
+{
+    local a b c d
+    { IFS=. read a b c d; } <<< $1
+    echo $(((((((a << 8) | b) << 8) | c) << 8) | d))
+}
+
+function helper::int2ip()
+{
+    local ui32=$1; shift
+    local ip n
+    ip=
+    for n in 1 2 3 4; do
+        ip=$((ui32 & 0xff))${ip:+.}$ip
+        ui32=$((ui32 >> 8))
+    done
+    echo $ip
+}
+
+
+function helper::netmask()
+{
+    local mask=$((0xffffffff << (32 - $1))); shift
+    helper::int2ip $mask
+}
+
+function helper::network()
+{
+    local addr=$(helper::ip2int $1); shift
+    local mask=$((0xffffffff << (32 -$1))); shift
+    helper::int2ip $((addr & mask))
+}
+
+
+function helper::add_to_ip {
+    val=$(helper::ip2int $1)
+    ((val+=$2))
+    helper::int2ip val
+}
+
+
+nr_of_clients=$(ls -1 /data/ccd/ | wc -l)
+
+new_nr=${nr_of_clients}
+((new_nr++))
+((new_nr++))
+
+
+if [[ "${client_type}" == "worker" ]]; then
+
+#  nr_of_workers=$(ls -l /data/ccd/w* | wc -l)
+#  new_worker_nr=${nr_of_workers}
+#  ((new_worker_nr++))
+#  ((new_worker_nr++))
+
+  # Build the ccd specific rules
+#  worker_ip=$(helper::add_to_ip ${worker_ip_base_address} ${new_worker_nr})
+  client_ip=$(helper::add_to_ip ${VPN_SUBNET} ${new_nr})
+
+  # todo convert the VPN_SUBNET prefix to subnet mask
+  echo "ifconfig-push ${client_ip} ${VPN_SUBNETMASK}" > /data/ccd/${client_name}
+  
+# pushing multiple ip's doesn't work :(
+  #  echo "ifconfig-push ${worker_ip} 255.0.0.0" >> /data/ccd/${client_name}
+#  echo "push \"route 5.0.0.0 255.0.0.0 vpn_gateway\"" >> /data/ccd/${client_name}
+
+else
+
+  client_ip=$(helper::add_to_ip ${VPN_SUBNET} ${new_nr})
+  echo "ifconfig-push ${client_ip} ${VPN_SUBNETMASK}" > /data/ccd/${client_name}
+
+fi

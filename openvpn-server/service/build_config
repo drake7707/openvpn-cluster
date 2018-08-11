@@ -1,0 +1,42 @@
+#!/bin/sh
+
+mkdir -p /data/clients
+
+if [[ "$1" == "server" ]]; then
+
+  sed -e "s/{{openvpn_subnet}}/${VPN_SUBNET}/" \
+      -e "s/{{openvpn_subnetmask}}/${VPN_SUBNETMASK}/" \
+      -e "s/{{openvpn_portshare_target}}/${VPN_PORTSHARE_TARGET}/" \
+      -e "s/{{openvpn_portshare_targetport}}/${VPN_PORTSHARE_TARGETPORT}/" \
+      /config/server.conf.templ > /data/server.conf
+
+elif [[ "$1" == "client" ]]; then 
+
+   client_name=$2
+
+   if [[ -z "${client_name}" ]]; then
+     echo "Must specify client name"
+     exit 1
+   fi
+
+   cp /config/client.conf.templ /data/clients/${client_name}.conf
+
+   sed -e "s/{{openvpn_server}}/${VPN_SERVER}/" \
+       -e "s/{{openvpn_server_port}}/${VPN_SERVER_PORT}/" \
+      /data/clients/${client_name}.conf > /data/clients/${client_name}.conf.tmp
+
+   rm /data/clients/${client_name}.conf && mv /data/clients/${client_name}.conf.tmp /data/clients/${client_name}.conf
+
+   awk '/\{\{ca\}\}/{system("cat /data/pki/ca.crt");next}1' /data/clients/${client_name}.conf > /data/clients/${client_name}.conf.tmp && \
+   rm /data/clients/${client_name}.conf && mv /data/clients/${client_name}.conf.tmp /data/clients/${client_name}.conf
+
+   awk '/\{\{tlsauth\}\}/{system("cat /data/pki/ta.key");next}1' /data/clients/${client_name}.conf > /data/clients/${client_name}.conf.tmp && \
+   rm /data/clients/${client_name}.conf && mv /data/clients/${client_name}.conf.tmp /data/clients/${client_name}.conf
+
+   awk "/\{\{private_key\}\}/{system(\"cat /data/pki/private/${client_name}.key\");next}1" /data/clients/${client_name}.conf > /data/clients/${client_name}.conf.tmp && \
+   rm /data/clients/${client_name}.conf && mv /data/clients/${client_name}.conf.tmp /data/clients/${client_name}.conf
+
+   awk "/\{\{cert\}\}/{system(\"openssl x509 -in /data/pki/issued/${client_name}.crt\");next}1" /data/clients/${client_name}.conf > /data/clients/${client_name}.conf.tmp && \
+   rm /data/clients/${client_name}.conf && mv /data/clients/${client_name}.conf.tmp /data/clients/${client_name}.conf
+
+fi

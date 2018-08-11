@@ -1,0 +1,30 @@
+#!/bin/sh
+set -x
+
+mkdir -p /data && cd /data
+
+if [[ ! -d "/data/pki" ]]; then
+  /usr/share/easy-rsa/easyrsa --batch init-pki
+  /usr/share/easy-rsa/easyrsa --req-cn=openvpn-server --batch build-ca nopass
+  /usr/share/easy-rsa/easyrsa --keysize=${VPN_KEYSIZE:-2048} --batch gen-dh
+
+  openvpn --genkey --secret /data/pki/ta.key
+
+  /usr/share/easy-rsa/easyrsa --batch build-server-full "openvpn-server" nopass
+  /usr/share/easy-rsa/easyrsa --batch gen-crl
+fi
+
+if [[ ! -f "/data/server.conf" ]]; then
+  /service/build_config server
+fi
+
+# if there is a rules.sh script in the data folder then execute it
+# this is useful to set up the correct iptables, especially as those are lost once the container restarts
+if [[ -f "/data/rules.sh" ]]; then
+  /bin/sh /data/rules.sh
+fi
+
+# ensure the ccd directory exists, the client specific rules will also be stored in there
+mkdir -p /data/ccd
+
+openvpn --config /data/server.conf --client-config-dir /data/ccd

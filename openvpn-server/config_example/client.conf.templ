@@ -1,0 +1,21 @@
+client
+nobind
+dev tun
+remote-cert-tls server
+
+remote {{openvpn_server}} {{openvpn_server_port}} tcp-client
+
+<key>
+{{private_key}}
+</key>
+<cert>
+{{cert}}
+</cert>
+<ca>
+{{ca}}
+</ca>
+<tls-auth>
+{{tlsauth}}
+</tls-auth>
+
+key-direction 1

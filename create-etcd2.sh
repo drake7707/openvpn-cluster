@@ -26,6 +26,7 @@ docker create \
   -v ${SERVER_DATA_DIR}/etcd:/etcd-data \
   --name ${container_name} \
   --hostname ${container_name} \
+  --restart on-failure \
   --ip 172.30.2.3 \
   --cap-add=NET_ADMIN \
   -l vpn-cluster \

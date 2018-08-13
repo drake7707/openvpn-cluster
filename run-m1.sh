@@ -4,7 +4,7 @@ vpn_subnet_mask=255.255.255.0
 api_server_container_ip=localhost
 VPN_PUBLIC_PORT=1194
 SERVER_DATA_DIR=`pwd`/m1
-VPN_PUBLIC_IP=192.168.0.120
+VPN_PUBLIC_IP=10.10.127.41
 
 docker run -d \
   --name "${container_name}" \

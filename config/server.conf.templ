@@ -24,13 +24,20 @@ port-share {{openvpn_portshare_target}} {{openvpn_portshare_targetport}}
 # use tap device
 dev tap0
 
+# setup the client-connect and client-disconnect scripts
+script-security 2
+client-connect /config/server-client-connect.sh
+client-disconnect /config/server-client-disconnect.sh
+# The user & group that can run the scripts and openvpn de-escalates to
+user root
+group root
+
+
 #use subnet topology
 topology subnet
 
 status /tmp/openvpn-status.log 
 
-user nobody
-group nogroup
 
 client-to-client
 

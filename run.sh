@@ -40,14 +40,25 @@ iptables -A POSTROUTING -o eth0 -m iprange --dst-range 192.168.0.0-192.168.255.2
 EOF
 
 
-#### Start M1 Etcd
-./run-etcd1.sh
+#### Create M1 Etcd, but not started yet
+./create-etcd1.sh
 
-# Add route so m1-etcd can resolve the advertisement ip 192.168.1.1
-docker exec -it m1-etcd ip r r 192.168.0.0/16 via ${m1_openvpn_ip}
+# write the networking rules
+tmp_etcd1rules=$(mktemp /tmp/etcd1-rules.sh.XXXXXX)
+cat <<EOFRULES >> ${tmp_etcd1rules}
+# Add route so m1-etcd can resolve the advertisement ips
+ip r r 192.168.0.0/16 via ${m1_openvpn_ip}
+EOFRULES
+chmod u+x ${tmp_etcd1rules}
+docker cp ${tmp_etcd1rules} m1-etcd:/rules.sh
+rm ${tmp_etcd1rules}
+
+# now start it
+docker start m1-etcd
+
 
 #### Setup cert to M2 server
-mkdir -p m2 && cp -r m1/* m2
+mkdir -p m2/vpn && cp -r m1/vpn/* m2/vpn
 rm -f m2/vpn/server.conf
 
 #### Start M2 OpenVPN Server
@@ -73,11 +84,25 @@ iptables -A POSTROUTING -o eth0 -m iprange --dst-range 192.168.0.0-192.168.255.2
 EOF
 
 
-#### Start M2 etcd
-./run-etcd2.sh
+#### Create M2 etcd
+./create-etcd2.sh
 
-# Add route so m1-etcd can resolve the advertisement ip 192.168.1.1
-docker exec -it m2-etcd ip r r 192.168.0.0/16 via ${m2_openvpn_ip}
+# write the networking rules
+tmp_etcd2rules=$(mktemp /tmp/etcd2-rules.sh.XXXXXX)
+cat <<EOFRULES >> ${tmp_etcd2rules}
+# Add route so m2-etcd can resolve the advertisement ips
+ip r r 192.168.0.0/16 via ${m2_openvpn_ip}
+EOFRULES
+chmod u+x ${tmp_etcd2rules}
+docker cp ${tmp_etcd2rules} m2-etcd:/rules.sh
+rm ${tmp_etcd2rules}
+
+##### TODO:
+######## ETCD can't be started now because the routing for 192.168.1.1 <-> 192.168.2.1 is not yet complete in the routing table of the masters!
+#########################
+
+# now start m2-etcd
+docker start m2-etcd
 
 
 # M2 joins the M1 network as master
@@ -89,7 +114,7 @@ sleep 1
 
 
 ## Setup cert to M3 server
-mkdir -p m3 && cp -r m1/* m3
+mkdir -p m3/vpn && cp -r m1/vpn/* m3/vpn
 rm -f m3/vpn/server.conf
 
 # Start M3 OpenVPN Server
@@ -158,7 +183,8 @@ docker exec -it m1-openvpn-server ip r r 5.0.0.2 via ${m2m1_in_m1_ip} dev tap0 #
 docker exec -it m1-openvpn-server ip r r 5.0.0.3 dev tap0 # w3 is connected locally
 # rules on m1 so 192.168/16 traffic works. this will be necessary for etcd
 docker exec -it m1-openvpn-server ip r r 192.168.2.0/24 via ${m2m1_in_m1_ip} dev tap0
-#docker exec -it m1-openvpn-server iptables -A POSTROUTING -t nat -m iprange --dst-range 192.168.0.0-192.168.255.255 -o tap0 -j MASQUERADE
+# need to masquerade otherwise anything on the m1network will send its own eth0 ip as source ip in the packet and the receiver doesn't know what to do with it
+docker exec -it m1-openvpn-server iptables -A POSTROUTING -t nat -m iprange --dst-range 192.168.0.0-192.168.255.255 -o tap0 -j MASQUERADE
 
 
 # routing table for m2m1
@@ -191,7 +217,7 @@ docker exec -it m2-openvpn-server ip r r 5.0.0.1 via ${m2m1_eth_ip} dev eth0 # w
 docker exec -it m2-openvpn-server ip r r 5.0.0.2 dev tap0 # w2 is connected locally
 docker exec -it m2-openvpn-server ip r r 5.0.0.3 via ${m2m1_eth_ip} dev eth0 # w3
 # rules on m2 so 192.168/16 traffic
-#docker exec -it m2-openvpn-server iptables -A POSTROUTING -t nat -m iprange --dst-range 192.168.0.0-192.168.255.255 -o tap0 -j MASQUERADE
+docker exec -it m2-openvpn-server iptables -A POSTROUTING -t nat -m iprange --dst-range 192.168.0.0-192.168.255.255 -o tap0 -j MASQUERADE
 docker exec -it m2-openvpn-server ip r r 192.168.1.0/24 via ${m2m1_eth_ip} dev eth0
 
 

@@ -1,0 +1,26 @@
+#!/bin/sh
+set -x
+
+name=${NAME}
+listen_ip=${LISTEN_IP}
+advertise_ip=${ADVERTISE_IP}
+initial_cluster=${INITIAL_CLUSTER}
+initial_cluster_state=${INITIAL_CLUSTER_STATE}
+
+# This etcd container is run as a sidecar container for the VPN gateway
+# the actual advertising of ip is done on the gateway itself and port forwarded on 2379,2380 to this container
+if [ -f "/rules.sh" ]; then
+  ./rules.sh
+fi
+
+/usr/local/bin/etcd \
+    --data-dir=/etcd-data \
+    --name ${name} \
+    --initial-advertise-peer-urls http://${advertise_ip}:2380 \
+    --listen-peer-urls http://0.0.0.0:2380 \
+    --advertise-client-urls http://${advertise_ip}:2379 \
+    --listen-client-urls http://0.0.0.0:2379 \
+    --initial-cluster="${initial_cluster}" \
+    --initial-cluster-state=${initial_cluster_state}
+
+

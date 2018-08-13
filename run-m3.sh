@@ -25,4 +25,4 @@ docker run -d \
   -v `pwd`/config:/config \
   -v ${SERVER_DATA_DIR}/vpn:/data \
   -p ${VPN_PUBLIC_PORT}:1194 \
-  idlabfuse/openvpn-server-amd64
+  idlabfuse/openvpn-clustered-server-amd64

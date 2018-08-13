@@ -1,10 +1,10 @@
 #!/bin/bash
 set -x
 
-# Clean everything
+#### Clean everything
 ./clean.sh
 
-# Create separate networks
+#### Create separate networks
 docker network create -d bridge --subnet 172.30.1.0/24 m1network
 docker network create -d bridge --subnet 172.30.2.0/24 m2network
 docker network create -d bridge --subnet 172.30.3.0/24 m3network
@@ -12,24 +12,81 @@ docker network create -d bridge --subnet 172.40.1.0/24 w1network
 docker network create -d bridge --subnet 172.40.2.0/24 w2network
 docker network create -d bridge --subnet 172.40.3.0/24 w3network
 
+m1_vpn_gateway=192.168.1.1
+m2_vpn_gateway=192.168.2.1
+m3_vpn_gateway=192.168.3.1
 
-# Start M1 OpenVPN Server
+
+#### Start M1 OpenVPN Server
 ./run-m1.sh
-sleep 3
+./wait-for-ip.sh m1-openvpn-server
 
-## Setup cert to M2 server
+#### Setup NAT rules on m1 so 2379 and 2380 on vpn server get port forwarded to the etcd container
+m1_etcd1_ip=172.30.1.3
+m1_openvpn_ip=172.30.1.2
+
+docker exec -i m1-openvpn-server /bin/sh <<EOF
+
+# forward everything that comes from the vpn net back to the eth0 and vice versa
+iptables -A FORWARD -p tcp --match multiport --sports 2379,2380 -i eth0 -o tap0 -j ACCEPT
+iptables -A FORWARD -p tcp --match multiport --dports 2379,2380 -i tap0 -o eth0 -j ACCEPT
+# rewrite the destination for all packets that are received on tcp:5000 on both interfaces
+iptables -A PREROUTING -t nat -p tcp --match multiport --dports 2379,2380 -j DNAT --to-destination ${m1_etcd1_ip}
+# rewrite the source for all packets going to the eth0 tcp:5000 or the destination will not know where to send the reply to
+iptables -A POSTROUTING -t nat -o eth0 -p tcp --match multiport --dports 2379,2380 -j SNAT --to-source ${m1_openvpn_ip}
+
+# all packets that go into the vpn range must have the vpn gateway as source, because the network knows the gateways but not the eth0 local addresses
+iptables -A POSTROUTING -o eth0 -m iprange --dst-range 192.168.0.0-192.168.255.255 -j SNAT --to-source ${m1_vpn_gateway} -t nat
+EOF
+
+
+#### Start M1 Etcd
+./run-etcd1.sh
+
+# Add route so m1-etcd can resolve the advertisement ip 192.168.1.1
+docker exec -it m1-etcd ip r r 192.168.0.0/16 via ${m1_openvpn_ip}
+
+#### Setup cert to M2 server
 mkdir -p m2 && cp -r m1/* m2
 rm -f m2/vpn/server.conf
 
-# Start M2 OpenVPN Server
+#### Start M2 OpenVPN Server
 ./run-m2.sh
-sleep 3
+./wait-for-ip.sh m2-openvpn-server
+
+#### Setup NAT rules on m2 so 2379 and 2380 on vpn server get port forwarded to the etcd container
+m2_etcd1_ip=172.30.2.3
+m2_openvpn_ip=172.30.2.2
+
+docker exec -i m2-openvpn-server /bin/sh <<EOF
+
+# forward everything that comes from the vpn net back to the eth0 and vice versa
+iptables -A FORWARD -p tcp --match multiport --sports 2379,2380 -i eth0 -o tap0 -j ACCEPT
+iptables -A FORWARD -p tcp --match multiport --dports 2379,2380 -i tap0 -o eth0 -j ACCEPT
+# rewrite the destination for all packets that are received on tcp:5000 on both interfaces
+iptables -A PREROUTING -t nat -p tcp --match multiport --dports 2379,2380 -j DNAT --to-destination ${m2_etcd1_ip}
+# rewrite the source for all packets going to the eth0 tcp:5000 or the destination will not know where to send the reply to
+iptables -A POSTROUTING -t nat -o eth0 -p tcp --match multiport --dports 2379,2380 -j SNAT --to-source ${m2_openvpn_ip}
+
+# all packets that go into the vpn range must have the vpn gateway as source, because the network knows the gateways but not the eth0 local addresses
+iptables -A POSTROUTING -o eth0 -m iprange --dst-range 192.168.0.0-192.168.255.255 -j SNAT --to-source ${m2_vpn_gateway} -t nat
+EOF
+
+
+#### Start M2 etcd
+./run-etcd2.sh
+
+# Add route so m1-etcd can resolve the advertisement ip 192.168.1.1
+docker exec -it m2-etcd ip r r 192.168.0.0/16 via ${m2_openvpn_ip}
+
 
 # M2 joins the M1 network as master
 docker exec m1-openvpn-server /service/build_client m2 master
 ./run-client.sh m2m1 `pwd`/m1/vpn/clients/m2.conf m2network
 ./sync-clients.sh
 sleep 1
+
+
 
 ## Setup cert to M3 server
 mkdir -p m3 && cp -r m1/* m3
@@ -71,10 +128,6 @@ sleep 5
 
 #### When workers join the cluster they need to get a fixed number
 #### the 5.0.0.0/8 route could be added in the ccd so the vpn gateway is easier
-
-m1_vpn_gateway=192.168.1.1
-m2_vpn_gateway=192.168.2.1
-m3_vpn_gateway=192.168.3.1
 
 # assign 5.0.0.1 to w1 & route to vpn gateway
 docker exec -it w1-openvpn-client ip a a 5.0.0.1 dev tap0
@@ -133,7 +186,7 @@ EOF
 
 # routing table for m2
 # m2 has m2m1 as client to m1 so the routes are slightly differt
-m2m1_eth_ip=172.30.2.3
+m2m1_eth_ip=172.30.2.4
 docker exec -it m2-openvpn-server ip r r 5.0.0.1 via ${m2m1_eth_ip} dev eth0 # w1
 docker exec -it m2-openvpn-server ip r r 5.0.0.2 dev tap0 # w2 is connected locally
 docker exec -it m2-openvpn-server ip r r 5.0.0.3 via ${m2m1_eth_ip} dev eth0 # w3

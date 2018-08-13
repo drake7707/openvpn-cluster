@@ -1,6 +1,7 @@
 container_name=m1-openvpn-server
 vpn_subnet=192.168.1.0
 vpn_subnet_mask=255.255.255.0
+vpn_gateway=192.168.1.1
 api_server_container_ip=localhost
 VPN_PUBLIC_PORT=1194
 SERVER_DATA_DIR=`pwd`/m1
@@ -13,6 +14,7 @@ docker run -d \
   --device /dev/net/tun \
   --restart=unless-stopped \
   --net=m1network \
+  --ip 172.30.1.2 \
   -l vpn-cluster \
   -e VPN_KEYSIZE=${VPN_KEYSIZE:-512} \
   -e VPN_SUBNET=${vpn_subnet} \
@@ -24,4 +26,5 @@ docker run -d \
   -v `pwd`/config:/config \
   -v ${SERVER_DATA_DIR}/vpn:/data \
   -p ${VPN_PUBLIC_PORT}:1194 \
-  idlabfuse/openvpn-server-amd64
+  idlabfuse/openvpn-clustered-server-amd64
+

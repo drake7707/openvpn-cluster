@@ -34,7 +34,6 @@ if [[ "${action}" == "connect" ]]; then
   done
 
   worker_base_address=$(./etcdget.sh "/vpn/config/worker_base_ip")
-  worker_entry=$(./etcdget.sh "/vpn/workers/${worker_name}")
 
 
   # import the helper functions necessary for building the worker ip
@@ -66,12 +65,11 @@ if [[ "${action}" == "connect" ]]; then
   # worker_number;worker_name;connected-to-master;worker-ip;last-updated
   worker_entry="${nr};${worker_name};${on_master};${ip};${last_updated}"
 
-  ./etcdset.sh "vpn/worker/${worker_name}"
+  ./etcdset.sh "/vpn/workers/${worker_name}" "${worker_entry}"
 
 
 elif [[ "${action}" == "disconnect" ]]; then
 
-  worker_entry=$(./etcdget.sh "/vpn/workers/${worker_name}")
   IFS=";" read -ra line_parts <<< "${worker_entry}"
   nr="${line_parts[0]}"
   ip="${line_parts[3]}"
@@ -80,6 +78,6 @@ elif [[ "${action}" == "disconnect" ]]; then
   last_updated=$(date "+%Y-%m-%dT%H:%M:%S")
 
   worker_entry="${nr};${worker_name};${on_master};${ip};${last_updated}"
-  ./etcdset.sh "vpn/worker/${worker_name}"
+  ./etcdset.sh "/vpn/workers/${worker_name}" "${worker_entry}"
 
 fi

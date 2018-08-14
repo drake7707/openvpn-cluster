@@ -32,7 +32,10 @@ if [[ "${client_name}" != "${client_name#worker-}" ]]; then # if the prefix is a
   cd /config/scripts
   /config/scripts/update-worker-routes.sh &
 
-  echo "push \"setenv-safe WORKER_IP 5.0.0.3\" " > $tmpCCDFile
+  # I can't really do this either because it would need to be in sync and this script is blocking the etcd communication
+  #echo "push \"setenv-safe WORKER_IP 5.0.0.3\" " > $tmpCCDFile
+ 
+  # Wellllllllllll damnit
 
 elif [[ "${client_name}" != "${client_name#master-}" ]]; then
   # this client is a foreign master

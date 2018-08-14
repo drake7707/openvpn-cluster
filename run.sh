@@ -18,6 +18,7 @@ docker network create -d bridge --subnet 172.40.3.0/24 w3network
 
 vpn_cluster_subnet=192.168.0.0/16
 vpn_worker_base_ip=5.0.0.0
+vpn_worker_subnet=5.0.0.0/8
 
 m1_vpn_subnet=192.168.1.0/24
 m2_vpn_subnet=192.168.2.0/24
@@ -89,6 +90,7 @@ docker start m1-etcd
 
 # write the global configuration into etcd, that is the same on all servers
 docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/worker_base_ip" ${vpn_worker_base_ip}
+docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/worker_subnet" ${vpn_worker_subnet}
 docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/cluster_subnet" ${vpn_cluster_subnet}
 
 # write entry for master 1

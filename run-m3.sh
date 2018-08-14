@@ -5,7 +5,7 @@ api_server_container_ip=localhost
 VPN_PUBLIC_PORT=1196
 SERVER_DATA_DIR=`pwd`/m3
 VPN_PUBLIC_IP=10.10.127.41
-
+VPN_WORKER_FIXED_BASE_IP=5.0.0.0
 
 docker run -d \
   --name "${container_name}" \
@@ -22,6 +22,7 @@ docker run -d \
   -e VPN_PORTSHARE_TARGETPORT=8000 \
   -e VPN_SERVER=${VPN_PUBLIC_IP} \
   -e VPN_SERVER_PORT=${VPN_PUBLIC_PORT} \
+  -e VPN_WORKER_FIXED_BASE_IP=${VPN_WORKER_FIXED_BASE_IP} \
   -v `pwd`/config:/config \
   -v ${SERVER_DATA_DIR}/vpn:/data \
   -p ${VPN_PUBLIC_PORT}:1194 \

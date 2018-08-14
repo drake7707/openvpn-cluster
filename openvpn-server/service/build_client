@@ -3,14 +3,19 @@
 client_name=$1
 client_type=$2
 
+prefix=
+if [[ ! -z ${client_type} ]]; then
+  prefix="${client_type}-"
+fi
+
 #worker_ip_base_address=5.0.0.0
 
 cd /data
 
 # Build the client pki
-/usr/share/easy-rsa/easyrsa build-client-full ${client_name} nopass
+/usr/share/easy-rsa/easyrsa build-client-full "${prefix}${client_name}" nopass
 # And generate the conf file
-/service/build_config client ${client_name}
+/service/build_config client "${prefix}${client_name}"
 
 # If there is any script available to do additional actions, call it
 if [[ -f /config/server-build-client.sh ]]; then

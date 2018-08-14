@@ -16,7 +16,6 @@ fi
 
 docker rm -f ${container_name}
 
-
 docker run -d \
   --name "${container_name}" \
   --hostname "${container_name}" \
@@ -26,5 +25,6 @@ docker run -d \
   --cap-add=NET_ADMIN \
   --device /dev/net/tun \
   --restart=unless-stopped \
+  -v `pwd`/client-config:/config \
   -v ${VPN_CONFIG_FILE}:/vpn/client.conf \
   idlabfuse/openvpn-client-amd64

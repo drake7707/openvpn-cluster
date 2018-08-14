@@ -1,6 +1,6 @@
 FROM alpine
 
-RUN apk add --no-cache openvpn tcpdump
+RUN apk add --no-cache openvpn tcpdump bash
 
 
 ENTRYPOINT ["/runopenvpn"]

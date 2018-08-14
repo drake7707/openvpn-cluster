@@ -8,6 +8,8 @@ set -x
 # This script updates or creates an entry for a worker
 
 action="$1"
+worker_name="$2"
+
 worker_entry=$(./etcdget.sh "/vpn/workers/${worker_name}")
 
 if [[ "${action}" == "connect" ]]; then

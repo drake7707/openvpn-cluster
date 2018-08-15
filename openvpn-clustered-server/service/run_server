@@ -30,8 +30,8 @@ mkdir -p /data/ccd
 
 # ----------------
 
-# Start the first process
-
+# Start OpenVPN server
+#---------------------
 openvpn --config /data/server.conf --client-config-dir /data/ccd & # don't use --daemon or it won't be picked up with jobs
 pid1=$!
 status=$?
@@ -40,7 +40,8 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-# Start the second process
+# Start worker API endpoint
+#--------------------------
 /config/run-worker-endpoint.sh &
 pid2=$!
 status=$?
@@ -49,14 +50,52 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
+# Start etcd worker watcher
+#--------------------------
+/config/run-etcd-worker-watcher.sh &
+pid3=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start ETCD worker watcher: $status"
+  exit $status
+fi
+
+# Start periodic full worker sync
+#--------------------------------
+/config/run-periodic-full-worker-sync.sh &
+pid4=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start ETCD worker watcher: $status"
+  exit $status
+fi
+
+
 while sleep 10; do
   exists1=$(jobs -p | grep -q -e "^${pid1}$"; echo $?)
-  exists2=$(jobs -p | grep -q -e "^${pid2}$"; echo $?)
-
-  if [[ exists1 -ne 0 || exists2 -ne 0 ]]; then
-    echo "One of the processes has already exited."
+  if [[ exists1 -ne 0 ]]; then
+    echo "OpenVPN server exited."
     exit 1
   fi
+
+  exists2=$(jobs -p | grep -q -e "^${pid2}$"; echo $?)
+  if [[ exists2 -ne 0 ]]; then
+    echo "Worker API endpoint exited." 1>&2
+    exit 1
+  fi
+
+  exists3=$(jobs -p | grep -q -e "^${pid3}$"; echo $?)
+  if [[ exists3 -ne 0 ]]; then
+    echo "ETCD worker watcher exited." 1>&2
+    exit 1
+  fi
+
+  exists4=$(jobs -p | grep -q -e "^${pid4}$"; echo $?)
+  if [[ exists4 -ne 0 ]]; then
+    echo "Periodic full worker route update exited." 1>&2
+    exit 1
+  fi
+
 done
 
 

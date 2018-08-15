@@ -8,4 +8,4 @@
 # so if m2-etcd never joins the entire cluster goes down
 
 # TODO: this should probably be an option
-ETCDCTL_API=3 etcdctl get --consistency="s" --print-value-only --prefix $1
+ETCDCTL_API=3 etcdctl get --consistency="s" --print-value-only --prefix "$1"

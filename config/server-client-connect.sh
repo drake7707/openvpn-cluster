@@ -25,17 +25,18 @@ if [[ "${client_name}" != "${client_name#worker-}" ]]; then # if the prefix is a
   # otherwise the client will stay connected but the cluster data is not updated 
 
   # update the etcd worker table
-  cd /config/scripts
-  /config/scripts/update-worker-table.sh connect ${client_name#worker-} &
+#  cd /config/scripts
+#  /config/scripts/update-worker-table.sh connect ${client_name#worker-} &
 
   # update the worker routes
-  cd /config/scripts
-  /config/scripts/update-worker-routes.sh &
+#  cd /config/scripts
+#  /config/scripts/update-worker-routes.sh &
 
   # I can't really do this either because it would need to be in sync and this script is blocking the etcd communication
   #echo "push \"setenv-safe WORKER_IP 5.0.0.3\" " > $tmpCCDFile
- 
-  # Wellllllllllll damnit
+  echo "push \"setenv-safe WORKER_NAME ${client_name#worker-}\" " > $tmpCCDFile
+
+   true
 
 elif [[ "${client_name}" != "${client_name#master-}" ]]; then
   # this client is a foreign master

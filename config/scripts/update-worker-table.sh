@@ -18,7 +18,7 @@ if [[ "${action}" == "connect" ]]; then
   masters=$(./etcdget.sh "/vpn/masters/")
   # master_number;public_ip;public_port;vpn_subnet;vpn_gateway;last_updated
   own_master_id=
-  IFS=$'\n' read -ra master_lines <<< "${masters}"
+  IFS=$'\n' read -d '' -ra master_lines <<< "${masters}" || true
   for line in ${master_lines[@]}; do
      echo "$line"
      IFS=";" read -ra line_parts <<< "${line}"
@@ -32,6 +32,11 @@ if [[ "${action}" == "connect" ]]; then
        break
      fi
   done
+
+  if [[ -z ${own_master_id} ]]; then
+    echo "Unable to determine own master id"
+    exit 1
+  fi
 
   worker_base_address=$(./etcdget.sh "/vpn/config/worker_base_ip")
 

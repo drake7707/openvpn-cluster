@@ -6,6 +6,15 @@ port=${1:-1500}
 
 function worker_connect() {
   local worker_name=$1
+
+  # update the etcd worker table
+  cd /config/scripts
+  /config/scripts/update-worker-table.sh connect ${worker_name}
+
+  # update the worker routes
+  cd /config/scripts
+  /config/scripts/update-worker-routes.sh
+
   ip=$(cd /config/scripts && ./get-worker-fixed-ip.sh "${worker_name}")
   worker_subnet=$(cd /config/scripts && ./etcdget.sh "/vpn/config/worker_subnet")
   cluster_subnet=$(cd /config/scripts && ./etcdget.sh "/vpn/config/cluster_subnet")

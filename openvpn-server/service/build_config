@@ -18,8 +18,9 @@ elif [[ "$1" == "client" ]]; then
      echo "Must specify client name"
      exit 1
    fi
-
-   cp /config/client.conf.templ /data/clients/${client_name}.conf
+ 
+   templateFile=/config/client.conf.templ
+   cp ${templateFile} /data/clients/${client_name}.conf
 
    sed -e "s/{{openvpn_server}}/${VPN_SERVER}/" \
        -e "s/{{openvpn_server_port}}/${VPN_SERVER_PORT}/" \

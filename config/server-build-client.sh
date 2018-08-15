@@ -13,6 +13,20 @@ client_type=$2
 
 source /config/scripts/helper.sh
 
+prefix=
+if [[ ! -z ${client_type} ]]; then
+  prefix="${client_type}-"
+fi
+
+clientConfig=/data/clients/${prefix}${client_name}.conf
+
+# if it's a worker then also set the client up script to execute to 
+# complete the worker ip and ruleset
+if [[ ${client_type} == "worker" ]]; then
+   echo "script-security 2" >> ${clientConfig}
+   echo "up /config/client-up.sh" >> ${clientConfig}
+fi
+
 
 # determine the fixed ip to assign to the client
 nr_of_clients=$(ls -1 /data/ccd/ | wc -l)

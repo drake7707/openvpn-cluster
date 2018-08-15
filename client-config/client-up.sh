@@ -3,9 +3,17 @@ set -x
 
 echo "Client is connected"
 
-#set
+set
 
-client_name=${X509_0_CN}
+export client_name=${OPENVPN_WORKER_NAME}
+export route_vpn_gateway=${route_vpn_gateway}
+
+cat <<'ENDSCRIPT' > /tmp/client-up.sh
+
+set -x
+
+# wait a bit
+sleep 5
 
 # Instead of passing environment variables, query the server 
 
@@ -41,4 +49,6 @@ ip r r ${vpn_cluster_subnet} via ${route_vpn_gateway}
 # make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
 iptables -A POSTROUTING -o tap0 -d ${worker_subnet} -j SNAT --to-source ${worker_ip} -t nat
 
+ENDSCRIPT
 
+/bin/bash /tmp/client-up.sh &

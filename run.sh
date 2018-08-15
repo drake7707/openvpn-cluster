@@ -235,39 +235,39 @@ sleep 5
 #### the 5.0.0.0/8 route could be added in the ccd so the vpn gateway is easier
 
 # assign 5.0.0.1 to w1 & route to vpn gateway
-docker exec -it w1-openvpn-client ip a a 5.0.0.1 dev tap0
-docker exec -it w1-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
-docker exec -it w1-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
+#docker exec -it w1-openvpn-client ip a a 5.0.0.1 dev tap0
+#docker exec -it w1-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
+#docker exec -it w1-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
 # make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-docker exec -it w1-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.1 -t nat
+#docker exec -it w1-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.1 -t nat
 
 # assign 5.0.0.2 to w2 & route to vpn gateway
-docker exec -it w2-openvpn-client ip a a 5.0.0.2 dev tap0
-docker exec -it w2-openvpn-client ip r r 5.0.0.0/8 via ${m2_vpn_gateway}
-docker exec -it w2-openvpn-client ip r r 192.168.0.0/16 via ${m2_vpn_gateway}
+#docker exec -it w2-openvpn-client ip a a 5.0.0.2 dev tap0
+#docker exec -it w2-openvpn-client ip r r 5.0.0.0/8 via ${m2_vpn_gateway}
+#docker exec -it w2-openvpn-client ip r r 192.168.0.0/16 via ${m2_vpn_gateway}
 # make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-docker exec -it w2-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.2 -t nat
+#docker exec -it w2-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.2 -t nat
 
 # assign 5.0.0.3 to w3 & route to vpn gateway
-docker exec -it w3-openvpn-client ip a a 5.0.0.3 dev tap0
-docker exec -it w3-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
-docker exec -it w3-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
+#docker exec -it w3-openvpn-client ip a a 5.0.0.3 dev tap0
+#docker exec -it w3-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
+#docker exec -it w3-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
 # make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-docker exec -it w3-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.3 -t nat
+#docker exec -it w3-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.3 -t nat
 
 
 # routing table for m1
-docker exec -it m1-openvpn-server ip r r 5.0.0.1 dev tap0 # w1 is connected locally
-docker exec -it m1-openvpn-server ip r r 5.0.0.2 via ${m2m1_in_m1_ip} dev tap0 # w2 is connected on m2
-docker exec -it m1-openvpn-server ip r r 5.0.0.3 dev tap0 # w3 is connected locally
+#docker exec -it m1-openvpn-server ip r r 5.0.0.1 dev tap0 # w1 is connected locally
+#docker exec -it m1-openvpn-server ip r r 5.0.0.2 via ${m2m1_in_m1_ip} dev tap0 # w2 is connected on m2
+#docker exec -it m1-openvpn-server ip r r 5.0.0.3 dev tap0 # w3 is connected locally
 
 # routing table for m2
 # m2 has m2m1 as client to m1 so the routes are slightly differt
-docker exec -it m2-openvpn-server ip r r 5.0.0.1 via ${m2m1_eth_ip} dev eth0 # w1
-docker exec -it m2-openvpn-server ip r r 5.0.0.2 dev tap0 # w2 is connected locally
-docker exec -it m2-openvpn-server ip r r 5.0.0.3 via ${m2m1_eth_ip} dev eth0 # w3
+#docker exec -it m2-openvpn-server ip r r 5.0.0.1 via ${m2m1_eth_ip} dev eth0 # w1
+#docker exec -it m2-openvpn-server ip r r 5.0.0.2 dev tap0 # w2 is connected locally
+#docker exec -it m2-openvpn-server ip r r 5.0.0.3 via ${m2m1_eth_ip} dev eth0 # w3
 
-
+exit 0
 
 
 # TODO: m3 isn't set up

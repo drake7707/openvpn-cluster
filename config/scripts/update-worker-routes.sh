@@ -7,6 +7,7 @@ set -x
 
 own_master_ip=$(./get-vpn-ip.sh)
 
+IFS=
 workers=$(./etcdget.sh "/vpn/workers/")
 masters=$(./etcdget.sh "/vpn/masters/")
 
@@ -17,7 +18,7 @@ masters=$(./etcdget.sh "/vpn/masters/")
 declare -A masters_subnets_by_id
 
 own_master_id=
-IFS=$'\n' read -ra master_lines <<< "${masters}"
+IFS=$'\n' read -d '' -r -a master_lines <<< "${masters}" || true
 for line in "${master_lines[@]}"; do
    echo "$line"
    IFS=";" read -ra line_parts <<< "${line}"
@@ -35,7 +36,10 @@ done
 
 
 # worker_number;worker_name;connected-to-master;worker-ip;last-updated
-IFS=$'\n' read -ra worker_lines <<< "${workers}"
+IFS=$'\n' read -d '' -r -a worker_lines <<< "${workers}" || true
+
+echo "lines: ${#worker_lines[@]}"
+
 for line in "${worker_lines[@]}"; do
 
    echo "Processing $line"
@@ -73,8 +77,9 @@ for line in "${worker_lines[@]}"; do
 
 	# route_to_master is something like 192.168.1.0/24 via ... dev tap0
 	# replace it with sed with regex
-	ip_route_args=$(echo "${route_to_master}" | sed -r "s/(.*?)\svia\s(.*)/5.0.0.2 via \2/")
+	ip_route_args=$(echo "${route_to_master}" | sed -r "s/(.*?)\svia\s(.*)/${worker_ip}\/32 via \2/")
 
+	IFS=" "
 	ip r r ${ip_route_args}
    fi
 

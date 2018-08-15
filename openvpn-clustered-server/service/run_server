@@ -1,0 +1,66 @@
+#!/bin/bash
+
+mkdir -p /data && cd /data
+
+# Generate keys if they don't exist yet
+if [[ ! -d "/data/pki" ]]; then
+  /usr/share/easy-rsa/easyrsa --batch init-pki
+  /usr/share/easy-rsa/easyrsa --req-cn=openvpn-server --batch build-ca nopass
+  /usr/share/easy-rsa/easyrsa --keysize=${VPN_KEYSIZE:-2048} --batch gen-dh
+
+  openvpn --genkey --secret /data/pki/ta.key
+
+  /usr/share/easy-rsa/easyrsa --batch build-server-full "openvpn-server" nopass
+  /usr/share/easy-rsa/easyrsa --batch gen-crl
+fi
+
+# Build the server configuration if it doesn't exist yet
+if [[ ! -f "/data/server.conf" ]]; then
+  /service/build_config server
+fi
+
+# if there is a rules.sh script in the data folder then execute it
+# this is useful to set up the correct iptables, especially as those are lost once the container restarts
+if [[ -f "/data/rules.sh" ]]; then
+  /bin/sh /data/rules.sh
+fi
+
+# ensure the ccd directory exists, the client specific rules will also be stored in there
+mkdir -p /data/ccd
+
+# ----------------
+
+# Start the first process
+
+openvpn --config /data/server.conf --client-config-dir /data/ccd & # don't use --daemon or it won't be picked up with jobs
+pid1=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start OpenVPN Server: $status"
+  exit $status
+fi
+
+# Start the second process
+/config/run-worker-endpoint.sh &
+pid2=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start Worker API endpoint: $status"
+  exit $status
+fi
+
+while sleep 10; do
+  exists1=$(jobs -p | grep -q -e "^${pid1}$"; echo $?)
+  exists2=$(jobs -p | grep -q -e "^${pid2}$"; echo $?)
+
+  if [[ exists1 -ne 0 || exists2 -ne 0 ]]; then
+    echo "One of the processes has already exited."
+    exit 1
+  fi
+done
+
+
+
+
+
+

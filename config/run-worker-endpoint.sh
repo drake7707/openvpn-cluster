@@ -28,6 +28,12 @@ function worker_connect() {
   printf "%s\n" "VPN_CLUSTER_SUBNET=${cluster_subnet}"
 }
 
+function get_masters() {
+   cd /config/scripts
+
+   masters=$(cd /config/scripts && ./get-masters-public-ip.sh)
+   printf "%s\n" "${masters}"
+}
 
 rm -f out
 mkfifo out
@@ -59,6 +65,11 @@ do
 	    worker_name=${url_parts[len-1]}
 
             result=$(worker_connect ${worker_name})
+	    printf "%s\n\n%s\n" "$HTTP_200" "${result}" > out
+	    0<&-
+        elif echo $REQUEST | grep -qE '^/masters'; then
+
+            result=$(get_masters)
 	    printf "%s\n\n%s\n" "$HTTP_200" "${result}" > out
 	    0<&-
         else

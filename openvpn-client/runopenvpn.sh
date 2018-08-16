@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 
 # Setup rules to forward traffic from the docker eth0 bridge to the vpn tunnel and back
 VPN_CONFIG=/vpn/client.conf
@@ -10,4 +11,12 @@ if [[ -f "/rules.sh" ]]; then
 fi
 
 # Start openvpn in the background
-openvpn ${VPN_CONFIG}
+
+# determine if there are any remote args stored, the list will be updated by fetching the master list periodically
+remote_args=
+mkdir -p /data
+if [[ -f /data/remote_args ]]; then
+  remote_args=$(cat /data/remote_args)
+fi
+
+openvpn --config "${VPN_CONFIG}" $remote_args

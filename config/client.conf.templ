@@ -6,8 +6,9 @@ dev tap
 persist-tun
 
 remote-cert-tls server
+proto tcp-client
 
-remote {{openvpn_server}} {{openvpn_server_port}} tcp-client
+remote {{openvpn_server}} {{openvpn_server_port}}
 
 
 <key>

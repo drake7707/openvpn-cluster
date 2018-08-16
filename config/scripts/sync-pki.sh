@@ -1,5 +1,7 @@
 #!/bin/bash
-set -x
+if [[ "${DEBUG:-}" == "y" ]]; then
+  set -x
+fi
 
 keys=$(./etcdgetkeys.sh "/vpn/pki/")
 
@@ -14,16 +16,15 @@ mkdir -p /data/pki/private
 mkdir -p /data/pki/certs_by_serial
 
 for line in "${key_lines[@]}"; do
+  # e.g. /vpn/pki/private/worker-w1.key
+  local_file=$(echo $line |  sed -e "s/^\/vpn/\/data/")
 
- # e.g. /vpn/pki/private/worker-w1.key
- local_file=$(echo $line |  sed -e "s/^\/vpn/\/data/")
-
- if [[ ! -f "${local_file}" ]]; then
+  if [[ ! -f "${local_file}" ]]; then
     # file does not exist locally, pull it
     ./etcdget.sh "$line" > "${local_file}"
- fi
+  fi
 
- keyMap["$line"]=1
+  keyMap["$line"]=1
 done
 
 existing_files=$(find "/data/pki/" | grep -e ".key$\|.crt$\|.pem$")
@@ -39,4 +40,3 @@ for file in "${existing_file_lines[@]}"; do
   fi
 
 done
-

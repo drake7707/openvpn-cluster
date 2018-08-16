@@ -3,7 +3,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 set -o errtrace
-set -x
+if [[ "${DEBUG:-}" == "y" ]]; then
+  set -x
+fi
 
 # This script updates or creates an entry in the worker table in etcd 
 # for a worker
@@ -29,6 +31,8 @@ if [[ "${action}" == "connect" ]]; then
   own_master_ip=$(./get-vpn-ip.sh)
   masters=$(./etcdget.sh "/vpn/masters/")
   # master_number;public_ip;public_port;vpn_subnet;vpn_gateway;last_updated
+
+  # look up what the own master id is based on the subnet
   own_master_id=
   IFS=$'\n' read -d '' -ra master_lines <<< "${masters}" || true
   for line in "${master_lines[@]}"; do
@@ -84,6 +88,12 @@ if [[ "${action}" == "connect" ]]; then
   ./etcdset.sh "/vpn/workers/${worker_name}" "${worker_entry}"
 
 elif [[ "${action}" == "disconnect" ]]; then
+  # Write -1 into the worker entry as 'on master'
+
+  if [[ -z "${worker_entry}" ]]; then
+    echo "Worker entry not found for worker ${worker_name}" 1>&2
+    exit 1
+  fi
 
   IFS=";" read -ra line_parts <<< "${worker_entry}"
   nr="${line_parts[0]}"

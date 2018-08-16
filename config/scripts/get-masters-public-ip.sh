@@ -1,6 +1,7 @@
 #!/bin/bash
-
-set -x
+if [[ "${DEBUG:-}" == "y" ]]; then
+  set -x
+fi
 
 masters=$(./etcdget.sh "/vpn/masters/")
 

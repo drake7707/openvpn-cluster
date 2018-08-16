@@ -1,5 +1,7 @@
 #!/bin/bash
-set -x
+if [[ "${DEBUG:-}" == "y" ]]; then
+  set -x
+fi
 
 trap "exit" INT
 

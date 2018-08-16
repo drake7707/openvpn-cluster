@@ -3,9 +3,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 set -o errtrace
-set -x
-
-own_master_ip=$(./get-vpn-ip.sh)
+if [[ "${DEBUG:-}" == "y" ]]; then
+  set -x
+fi
 
 IFS=
 

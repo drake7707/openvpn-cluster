@@ -1,4 +1,6 @@
 
+own_master_ip=$(./get-vpn-ip.sh)
+
 masters=$(./etcdget.sh "/vpn/masters/")
 
 # master_number;public_ip;public_port;vpn_subnet;vpn_gateway;last_updated

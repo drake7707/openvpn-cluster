@@ -5,6 +5,11 @@ set -x
 mkdir -p /data
 route_vpn_gateway=$(cat /data/vpn_gateway)
 
+if [[ -z "${route_vpn_gateway}" ]]; then
+  echo "No VPN gateway specified, exiting" 1>&2
+  exit 1
+fi
+
 masters=$(wget -q -O - http://${route_vpn_gateway}:1500/masters)
 
 if [[ "$?" -eq 0 ]]; then

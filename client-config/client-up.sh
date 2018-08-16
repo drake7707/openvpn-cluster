@@ -14,6 +14,8 @@ export route_vpn_gateway=${route_vpn_gateway}
 
 cat <<'ENDSCRIPT' | /bin/bash &
 
+sleep 5
+
 set -x
 
 # Instead of passing environment variables, query the server
@@ -25,7 +27,7 @@ if [[ "$?" -ne 0 ]]; then
   # Connection to the worker endpoint failed, the worker table won't be updated and the fixed ip won't be set
   # Kill the openvpn client so the container restarts, this state is inconsistent
   echo "Unable to connect to the worker API endpoint, the worker table won't be updated. This state is inconsistent, killing openVPN client" 1>&2
-  killall openvpn
+  pkill -f openvpn
   exit 1
 fi
 

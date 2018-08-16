@@ -244,16 +244,16 @@ EOF
 
 # W1 joins M1: Create vpn profile for w1 on M1
 docker exec m1-openvpn-server /service/build_client w1 worker
-./run-client.sh w1 `pwd`/m1/vpn/clients/worker-w1.conf w1network
+./run-clustered-client.sh w1 `pwd`/m1/vpn/clients/worker-w1.conf w1network
 sleep 1
 
 # W2 joins M2
 docker exec m2-openvpn-server /service/build_client w2 worker
-./run-client.sh w2 `pwd`/m2/vpn/clients/worker-w2.conf w2network
+./run-clustered-client.sh w2 `pwd`/m2/vpn/clients/worker-w2.conf w2network
 
 # W3 joins M1
 docker exec m1-openvpn-server /service/build_client w3 worker
-./run-client.sh w3 `pwd`/m1/vpn/clients/worker-w3.conf w3network
+./run-clustered-client.sh w3 `pwd`/m1/vpn/clients/worker-w3.conf w3network
 
 sleep 5
 

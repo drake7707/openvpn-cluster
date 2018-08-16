@@ -11,12 +11,4 @@ if [[ -f "/rules.sh" ]]; then
 fi
 
 # Start openvpn in the background
-
-# determine if there are any remote args stored, the list will be updated by fetching the master list periodically
-remote_args=
-mkdir -p /data
-if [[ -f /data/remote_args ]]; then
-  remote_args=$(cat /data/remote_args)
-fi
-
-openvpn --config "${VPN_CONFIG}" $remote_args
+openvpn --config "${VPN_CONFIG}"

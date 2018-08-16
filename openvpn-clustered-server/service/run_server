@@ -95,37 +95,37 @@ fi
 
 while sleep 10; do
   exists1=$(jobs -p | grep -q -e "^${pid1}$"; echo $?)
-  if [[ exists1 -ne 0 ]]; then
+  if [[ "${exists1}" -ne 0 ]]; then
     echo "OpenVPN server exited."
     exit 1
   fi
 
   exists2=$(jobs -p | grep -q -e "^${pid2}$"; echo $?)
-  if [[ exists2 -ne 0 ]]; then
+  if [[ "${exists2}" -ne 0 ]]; then
     echo "Worker API endpoint exited." 1>&2
     exit 1
   fi
 
   exists3=$(jobs -p | grep -q -e "^${pid3}$"; echo $?)
-  if [[ exists3 -ne 0 ]]; then
+  if [[ "${exists3}" -ne 0 ]]; then
     echo "ETCD worker watcher exited." 1>&2
     exit 1
   fi
 
   exists4=$(jobs -p | grep -q -e "^${pid4}$"; echo $?)
-  if [[ exists4 -ne 0 ]]; then
+  if [[ "${exists4}" -ne 0 ]]; then
     echo "Periodic full worker route update exited." 1>&2
     exit 1
   fi
 
   exists5=$(jobs -p | grep -q -e "^${pid5}$"; echo $?)
-  if [[ exists5 -ne 0 ]]; then
+  if [[ "${exists5}" -ne 0 ]]; then
     echo "ETCD pki watcher existed." 1>&2
     exit 1
   fi
 
   exists6=$(jobs -p | grep -q -e "^${pid6}$"; echo $?)
-  if [[ exists6 -ne 0 ]]; then
+  if [[ "${exists6}" -ne 0 ]]; then
     echo "Periodic sync pki exited." 1>&2
     exit 1
   fi

@@ -1,5 +1,5 @@
 #!/bin/bash
-#set -x
+set -x
 
 port=${1:-1500}
 
@@ -9,11 +9,11 @@ function worker_connect() {
 
   # update the etcd worker table
   cd /config/scripts
-  /config/scripts/update-worker-table.sh connect ${worker_name}
+  /config/scripts/update-worker-table.sh connect ${worker_name} 1>/dev/null 2>&1
 
   # update the worker routes
   cd /config/scripts
-  /config/scripts/update-worker-routes.sh
+  /config/scripts/update-worker-routes.sh 1>/dev/null 2>&1
 
   ip=$(cd /config/scripts && ./get-worker-fixed-ip.sh "${worker_name}")
   worker_subnet=$(cd /config/scripts && ./etcdget.sh "/vpn/config/worker_subnet")

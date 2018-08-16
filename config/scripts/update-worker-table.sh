@@ -5,10 +5,22 @@ set -o pipefail
 set -o errtrace
 set -x
 
-# This script updates or creates an entry for a worker
+# This script updates or creates an entry in the worker table in etcd 
+# for a worker
 
-action="$1"
-worker_name="$2"
+action="${1:-}"
+worker_name="${2:-}"
+
+
+if [[ -z "${action}" ]]; then
+  echo "Action is required, please specify connect or disconnect" 1>&2
+  exit 1
+fi
+
+if [[ -z "${worker_name}" ]]; then
+  echo "Worker name is required" 1>&2
+  exit 1
+fi
 
 worker_entry=$(./etcdget.sh "/vpn/workers/${worker_name}")
 
@@ -19,7 +31,7 @@ if [[ "${action}" == "connect" ]]; then
   # master_number;public_ip;public_port;vpn_subnet;vpn_gateway;last_updated
   own_master_id=
   IFS=$'\n' read -d '' -ra master_lines <<< "${masters}" || true
-  for line in ${master_lines[@]}; do
+  for line in "${master_lines[@]}"; do
      echo "$line"
      IFS=";" read -ra line_parts <<< "${line}"
   
@@ -44,9 +56,8 @@ if [[ "${action}" == "connect" ]]; then
   # import the helper functions necessary for building the worker ip
   DIR="${BASH_SOURCE%/*}"
   if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
-  source ${DIR}/helper.sh
+  source "${DIR}/helper.sh"
 
-  
   nr=
   ip=
   on_master=${own_master_id}
@@ -65,14 +76,12 @@ if [[ "${action}" == "connect" ]]; then
     ip="${line_parts[3]}"
   fi
 
-
   last_updated=$(date "+%Y-%m-%dT%H:%M:%S")
   # worker_number;worker_name;connected-to-master;worker-ip;last-updated
   worker_entry="${nr};${worker_name};${on_master};${ip};${last_updated}"
 
   # TODO: this is NOT atomic, it's possible another OpenVPN server claimed the worker number during the get and this put!. This needs to be done in a transaction!
   ./etcdset.sh "/vpn/workers/${worker_name}" "${worker_entry}"
-
 
 elif [[ "${action}" == "disconnect" ]]; then
 

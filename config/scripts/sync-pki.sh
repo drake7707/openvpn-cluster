@@ -8,6 +8,11 @@ declare -A keyMap
 # worker_number;worker_name;connected-to-master;worker-ip;last-updated
 IFS=$'\n' read -d '' -r -a key_lines <<< "${keys}" || true
 
+#ensure the folders exist
+mkdir -p /data/pki/issued
+mkdir -p /data/pki/private
+mkdir -p /data/pki/certs_by_serial
+
 for line in "${key_lines[@]}"; do
 
  # e.g. /vpn/pki/private/worker-w1.key
@@ -21,7 +26,7 @@ for line in "${key_lines[@]}"; do
  keyMap["$line"]=1
 done
 
-existing_files=$(find "/data/pki/" | grep -e "\(.key$\|.crt$\)")
+existing_files=$(find "/data/pki/" | grep -e ".key$\|.crt$\|.pem$")
 
 IFS=$'\n' read -d '' -r -a existing_file_lines <<< "${existing_files}" || true
 

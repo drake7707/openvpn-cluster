@@ -48,6 +48,6 @@ if [[ ${client_type} == "worker" ]]; then
 #  /config/scripts/etcdset.sh "/vpn/pki/issued/${prefix}${client_name}.crt" "$(cat /data/pki/private/${prefix}${client_name}.crt)"
 
   # Force a sync of the new pki of the client. If etcd is unreachable it's fine, it will periodically sync and will eventually get on there
-  (/config/scripts/sync-pki.sh || true) &
+  (cd /config/scripts && ./sync-pki.sh || true) &
 fi
 

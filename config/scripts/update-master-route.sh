@@ -12,7 +12,9 @@ master_name=$1
 master_ip_in_subnet=$2
 
 
-master_entry=$(./etcdget.sh "/vpn/masters/${master_name}")
+# must skip consensus because etcd might be unhealthy by master that has joined
+master_entry=$(./etcdget.sh --skip-consensus "/vpn/masters/${master_name}")
+
 # master_number;public_ip;public_port;vpn_subnet;vpn_gateway;last_updated
 
 if [[ -z "${master_entry}" ]]; then

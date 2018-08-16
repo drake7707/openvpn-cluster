@@ -101,8 +101,13 @@ docker exec -it m1-openvpn-server /config/scripts/register-master.sh "m1" "10.10
 ###################################################
 
 #### Setup cert to M2 server
-mkdir -p m2/vpn && cp -r m1/vpn/* m2/vpn
-rm -f m2/vpn/server.conf
+
+# serialize to base64 so it can be returned into the json response of the join request
+pki_data=$(tar --exclude="./server.conf" -zcv -C m1/vpn/pki . | base64)
+
+# extract it on the new openvpn server
+mkdir -p m2/vpn/pki
+echo "${pki_data}" | base64 -d | tar -xzv -C m2/vpn/pki
 
 #### Start M2 OpenVPN Server
 ./run-m2.sh
@@ -139,6 +144,9 @@ EOF
 docker exec -it m1-openvpn-server /config/scripts/register-master.sh "m2" "10.10.127.41" "1195" "${m2_vpn_subnet}" "${m2_vpn_gateway}"
 
 
+
+
+
 #### Create M2 etcd
 ./create-etcd2.sh
 
@@ -166,7 +174,6 @@ docker start m2-etcd
 # M2 joins the M1 network as master
 docker exec m1-openvpn-server /service/build_client m2 master
 ./run-client.sh m2m1 `pwd`/m1/vpn/clients/master-m2.conf m2network ${m2m1_eth_ip}
-./sync-clients.sh
 
 sleep 1
 
@@ -190,6 +197,9 @@ ip r r 0.0.0.0/0 via ${m2_openvpn_eth_ip} table toeth
 
 EOF
 
+# Now that the sidecar is set up the etcd will be able to become healthy again
+# wait for it because during the time it's not no workers will be able to join (because it pushes the private keys/crt to the etcd)
+./wait-for-etcd.sh m2-etcd
 
 
 
@@ -216,18 +226,15 @@ EOF
 # W1 joins M1: Create vpn profile for w1 on M1
 docker exec m1-openvpn-server /service/build_client w1 worker
 ./run-client.sh w1 `pwd`/m1/vpn/clients/worker-w1.conf w1network
-./sync-clients.sh
 sleep 1
 
 # W2 joins M2
 docker exec m2-openvpn-server /service/build_client w2 worker
 ./run-client.sh w2 `pwd`/m2/vpn/clients/worker-w2.conf w2network
-./sync-clients.sh
 
 # W3 joins M1
 docker exec m1-openvpn-server /service/build_client w3 worker
 ./run-client.sh w3 `pwd`/m1/vpn/clients/worker-w3.conf w3network
-./sync-clients.sh
 
 sleep 5
 

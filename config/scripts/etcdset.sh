@@ -1,3 +1,5 @@
 #!/bin/bash
 
-ETCDCTL_API=3 etcdctl put "$1" "$2"
+IFS=
+export ETCDCTL_API=3
+echo "$2" | etcdctl put "$1"

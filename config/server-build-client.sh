@@ -39,3 +39,15 @@ new_nr=$((new_nr+1)) # start from 2
 client_ip=$(helper::add_to_ip ${VPN_SUBNET} ${new_nr})
 # Push the fixed ip in the vpn subnet, only valid for the current vpn server!
 echo "ifconfig-push ${client_ip} ${VPN_SUBNETMASK}" > /data/ccd/${client_name}
+
+
+# The pki and cert for the client is already generated, push those files to etcd if it's a worker or a master
+if [[ ${client_type} == "worker" ]]; then
+
+#  /config/scripts/etcdset.sh "/vpn/pki/private/${prefix}${client_name}.key" "$(cat /data/pki/private/${prefix}${client_name}.key)"
+#  /config/scripts/etcdset.sh "/vpn/pki/issued/${prefix}${client_name}.crt" "$(cat /data/pki/private/${prefix}${client_name}.crt)"
+
+  # Force a sync of the new pki of the client. If etcd is unreachable it's fine, it will periodically sync and will eventually get on there
+  (/config/scripts/sync-pki.sh || true) &
+fi
+

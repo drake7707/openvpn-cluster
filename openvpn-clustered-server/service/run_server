@@ -66,9 +66,31 @@ fi
 pid4=$!
 status=$?
 if [ $status -ne 0 ]; then
-  echo "Failed to start ETCD worker watcher: $status"
+  echo "Failed to start periodic full worker sync: $status"
   exit $status
 fi
+
+
+# Start etcd pki watcher
+#--------------------------
+/config/run-etcd-pki-watcher.sh &
+pid5=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start ETCD pki watcher: $status"
+  exit $status
+fi
+
+# Start periodic pki sync
+#--------------------------------
+/config/run-periodic-sync-pki.sh &
+pid6=$!
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start periodic pki sync: $status"
+  exit $status
+fi
+
 
 
 while sleep 10; do
@@ -93,6 +115,18 @@ while sleep 10; do
   exists4=$(jobs -p | grep -q -e "^${pid4}$"; echo $?)
   if [[ exists4 -ne 0 ]]; then
     echo "Periodic full worker route update exited." 1>&2
+    exit 1
+  fi
+
+  exists5=$(jobs -p | grep -q -e "^${pid5}$"; echo $?)
+  if [[ exists5 -ne 0 ]]; then
+    echo "ETCD pki watcher existed." 1>&2
+    exit 1
+  fi
+
+  exists6=$(jobs -p | grep -q -e "^${pid6}$"; echo $?)
+  if [[ exists6 -ne 0 ]]; then
+    echo "Periodic sync pki exited." 1>&2
     exit 1
   fi
 

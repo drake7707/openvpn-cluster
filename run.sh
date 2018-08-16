@@ -45,7 +45,9 @@ m2m1_eth_ip=172.30.2.4
 
 #### Setup NAT rules on m1 so 2379 and 2380 on vpn server get port forwarded to the etcd container
 
-docker exec -i m1-openvpn-server /bin/sh <<EOF
+docker exec -i m1-openvpn-server /bin/sh <<EOFHOST
+# Setting up rules script
+cat <<EOFRULES > /data/rules.sh
 
 # forward everything that comes from the vpn net back to the eth0 and vice versa
 iptables -A FORWARD -p tcp --match multiport --sports 2379,2380 -i eth0 -o tap0 -j ACCEPT
@@ -68,7 +70,13 @@ iptables -A POSTROUTING -o eth0 -s ${m1_etcd_ip} -d ${m1_etcd_ip} -j SNAT --to-s
 iptables -A OUTPUT      -d 127.0.0.1 -p tcp -m multiport --dports 2379,2380 -j DNAT --to-destination ${m1_etcd_ip} -t nat
 iptables -A POSTROUTING -s 127.0.0.1 -o eth0 -j MASQUERADE -t nat
 
-EOF
+EOFRULES
+
+# rules.sh written
+# Applying rules now
+/bin/sh /data/rules.sh
+exit
+EOFHOST
 
 
 #### Create M1 Etcd, but not started yet
@@ -114,7 +122,12 @@ echo "${pki_data}" | base64 -d | tar -xzv -C m2/vpn/pki
 ./wait-for-ip.sh m2-openvpn-server
 
 #### Setup NAT rules on m2 so 2379 and 2380 on vpn server get port forwarded to the etcd container
-docker exec -i m2-openvpn-server /bin/sh <<EOF
+
+
+
+docker exec -i m2-openvpn-server /bin/sh <<EOFHOST
+# Setting up rules script
+cat <<EOFRULES > /data/rules.sh
 
 # forward everything that comes from the vpn net back to the eth0 and vice versa
 iptables -A FORWARD -p tcp --match multiport --sports 2379,2380 -i eth0 -o tap0 -j ACCEPT
@@ -137,7 +150,13 @@ iptables -A POSTROUTING -o eth0 -s ${m2_etcd_ip} -d ${m2_etcd_ip} -j SNAT --to-s
 iptables -A OUTPUT      -d 127.0.0.1 -p tcp -m multiport --dports 2379,2380 -j DNAT --to-destination ${m2_etcd_ip} -t nat
 iptables -A POSTROUTING -s 127.0.0.1 -o eth0 -j MASQUERADE -t nat
 
-EOF
+EOFRULES
+
+# rules.sh written
+# Applying rules now
+/bin/sh /data/rules.sh
+exit
+EOFHOST
 
 
 # register m2 as master (m2 connected to m1, so register-master will be executed on m1) (must be done before the m2-etcd is registered into the cluster)

@@ -70,6 +70,7 @@ if [[ "${action}" == "connect" ]]; then
   # worker_number;worker_name;connected-to-master;worker-ip;last-updated
   worker_entry="${nr};${worker_name};${on_master};${ip};${last_updated}"
 
+  # TODO: this is NOT atomic, it's possible another OpenVPN server claimed the worker number during the get and this put!. This needs to be done in a transaction!
   ./etcdset.sh "/vpn/workers/${worker_name}" "${worker_entry}"
 
 

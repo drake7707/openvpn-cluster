@@ -47,6 +47,9 @@ elif [[ "${client_name}" != "${client_name#master-}" ]]; then
   master_name=${client_name#master-}
   # ifconfig_pool_remote_ip is a env set by openvpn
   /config/scripts/update-master-route.sh "${master_name}" "${ifconfig_pool_remote_ip}" &
+ 
+  # TODO: if for some reason adding master route fails, then it MUST disconnect the client, otherwise the master routing is in an inconsistent state
+  # This must be done through the management API as it runs in a background process to not block the entire tunnel
 
 else 
   # this client is something else, probably a client config for an admin

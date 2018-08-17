@@ -37,7 +37,7 @@ fi
 source /service/scripts/helper.sh
 
 
-clientConfig=/data/clients/${prefix}${client_name}.conf
+clientConfig="/data/clients/${prefix}${client_name}.conf"
 
 # if it's a worker then also set the client up script to execute to 
 # complete the worker ip and ruleset

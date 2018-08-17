@@ -7,5 +7,6 @@ COPY ./service /service
 
 # update the run_server script so it runs multiple background processes
 COPY ./service/run_server /service
+COPY ./service/build_client /service
 
 CMD "/service/run_server"

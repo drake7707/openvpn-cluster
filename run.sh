@@ -8,6 +8,10 @@ set -x
 #### Clean everything
 ./clean.sh
 
+
+# fill in the ip of the host eth0
+export VPN_PUBLIC_IP=10.10.127.41
+
 #### Create separate networks
 docker network create -d bridge --subnet 172.30.1.0/24 m1network
 docker network create -d bridge --subnet 172.30.2.0/24 m2network
@@ -66,7 +70,8 @@ iptables -A POSTROUTING -o tap0 -m iprange --dst-range 192.168.0.0-192.168.255.2
 # nat hairpin for etcd (allows for etcd -> gateway -> etcd)
 iptables -A POSTROUTING -o eth0 -s ${m1_etcd_ip} -d ${m1_etcd_ip} -j SNAT --to-source ${m1_vpn_gateway} -t nat
 
-# make 127.0.0.1:2379 & 127.0.0.1:2380 also work && rewrite source ip
+# make 127.0.0.1:2379 & 127.0.0.1:2380 also work && rewrite source ip, this is necessary as etcdctl called without a --endpoints parameter will use localhost
+# NOTE: this requires sysctl -w net.ipv4.conf.all.route_localnet=1 on the host
 iptables -A OUTPUT      -d 127.0.0.1 -p tcp -m multiport --dports 2379,2380 -j DNAT --to-destination ${m1_etcd_ip} -t nat
 iptables -A POSTROUTING -s 127.0.0.1 -o eth0 -j MASQUERADE -t nat
 
@@ -97,12 +102,12 @@ docker start m1-etcd
 ./wait-for-etcd.sh m1-etcd
 
 # write the global configuration into etcd, that is the same on all servers
-docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/worker_base_ip" ${vpn_worker_base_ip}
-docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/worker_subnet" ${vpn_worker_subnet}
-docker exec -it m1-openvpn-server /config/scripts/etcdset.sh "/vpn/config/cluster_subnet" ${vpn_cluster_subnet}
+docker exec -it m1-openvpn-server /service/scripts/etcdset.sh "/vpn/config/worker_base_ip" ${vpn_worker_base_ip}
+docker exec -it m1-openvpn-server /service/scripts/etcdset.sh "/vpn/config/worker_subnet" ${vpn_worker_subnet}
+docker exec -it m1-openvpn-server /service/scripts/etcdset.sh "/vpn/config/cluster_subnet" ${vpn_cluster_subnet}
 
 # write entry for master 1
-docker exec -it m1-openvpn-server /config/scripts/register-master.sh "m1" "10.10.127.41" "1194" "${m1_vpn_subnet}" "${m1_vpn_gateway}"
+docker exec -it m1-openvpn-server /service/scripts/register-master.sh "m1" "10.10.127.41" "1194" "${m1_vpn_subnet}" "${m1_vpn_gateway}"
 
 ###################################################
 ############  Set up master 2 (M2) ################
@@ -160,7 +165,7 @@ EOFHOST
 
 
 # register m2 as master (m2 connected to m1, so register-master will be executed on m1) (must be done before the m2-etcd is registered into the cluster)
-docker exec -it m1-openvpn-server /config/scripts/register-master.sh "m2" "10.10.127.41" "1195" "${m2_vpn_subnet}" "${m2_vpn_gateway}"
+docker exec -it m1-openvpn-server /service/scripts/register-master.sh "m2" "10.10.127.41" "1195" "${m2_vpn_subnet}" "${m2_vpn_gateway}"
 
 
 
@@ -256,47 +261,6 @@ docker exec m1-openvpn-server /service/build_client w3 worker
 ./run-clustered-client.sh w3 `pwd`/m1/vpn/clients/worker-w3.conf w3network
 
 sleep 5
-
-#### When workers join the cluster they need to get a fixed number
-#### the 5.0.0.0/8 route could be added in the ccd so the vpn gateway is easier
-
-# assign 5.0.0.1 to w1 & route to vpn gateway
-#docker exec -it w1-openvpn-client ip a a 5.0.0.1 dev tap0
-#docker exec -it w1-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
-#docker exec -it w1-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
-# make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-#docker exec -it w1-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.1 -t nat
-
-# assign 5.0.0.2 to w2 & route to vpn gateway
-#docker exec -it w2-openvpn-client ip a a 5.0.0.2 dev tap0
-#docker exec -it w2-openvpn-client ip r r 5.0.0.0/8 via ${m2_vpn_gateway}
-#docker exec -it w2-openvpn-client ip r r 192.168.0.0/16 via ${m2_vpn_gateway}
-# make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-#docker exec -it w2-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.2 -t nat
-
-# assign 5.0.0.3 to w3 & route to vpn gateway
-#docker exec -it w3-openvpn-client ip a a 5.0.0.3 dev tap0
-#docker exec -it w3-openvpn-client ip r r 5.0.0.0/8 via ${m1_vpn_gateway}
-#docker exec -it w3-openvpn-client ip r r 192.168.0.0/16 via ${m1_vpn_gateway}
-# make sure that the sent packet has source 5.0.0.1 when it's communicating to another worker
-#docker exec -it w3-openvpn-client iptables -A POSTROUTING -o tap0 -m iprange --dst-range 5.0.0.0-5.255.255.255 -j SNAT --to-source 5.0.0.3 -t nat
-
-
-# routing table for m1
-#docker exec -it m1-openvpn-server ip r r 5.0.0.1 dev tap0 # w1 is connected locally
-#docker exec -it m1-openvpn-server ip r r 5.0.0.2 via ${m2m1_in_m1_ip} dev tap0 # w2 is connected on m2
-#docker exec -it m1-openvpn-server ip r r 5.0.0.3 dev tap0 # w3 is connected locally
-
-# routing table for m2
-# m2 has m2m1 as client to m1 so the routes are slightly differt
-#docker exec -it m2-openvpn-server ip r r 5.0.0.1 via ${m2m1_eth_ip} dev eth0 # w1
-#docker exec -it m2-openvpn-server ip r r 5.0.0.2 dev tap0 # w2 is connected locally
-#docker exec -it m2-openvpn-server ip r r 5.0.0.3 via ${m2m1_eth_ip} dev eth0 # w3
-
-exit 0
-
-
-# TODO: m3 isn't set up
 
 echo "Current status of network:"
 

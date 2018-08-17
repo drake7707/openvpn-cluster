@@ -39,7 +39,7 @@ fi
 
 
 # make sure to set workdir
-cd /config/scripts/
+cd /service/scripts/
 
 master_entry=$(./etcdget.sh "/vpn/masters/${master_name}")
 

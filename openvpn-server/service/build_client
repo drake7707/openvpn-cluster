@@ -18,6 +18,6 @@ cd /data
 /service/build_config client "${prefix}${client_name}"
 
 # If there is any script available to do additional actions, call it
-if [[ -f /config/server-build-client.sh ]]; then
-  /config/server-build-client.sh $@
+if [[ -f /service/server-build-client.sh ]]; then
+  /service/server-build-client.sh $@
 fi

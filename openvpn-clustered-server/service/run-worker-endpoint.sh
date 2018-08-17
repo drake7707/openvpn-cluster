@@ -9,16 +9,14 @@ function worker_connect() {
   local worker_name=$1
 
   # update the etcd worker table
-  cd /config/scripts
-  /config/scripts/update-worker-table.sh connect ${worker_name} 1>/dev/null 2>&1
+  (cd /service/scripts && ./update-worker-table.sh connect ${worker_name} 1>/dev/null 2>&1)
 
   # update the worker routes
-  cd /config/scripts
-  /config/scripts/update-worker-routes.sh 1>/dev/null 2>&1
+  (cd /service/scripts && ./update-worker-routes.sh 1>/dev/null 2>&1)
 
-  ip=$(cd /config/scripts && ./get-worker-fixed-ip.sh "${worker_name}")
-  worker_subnet=$(cd /config/scripts && ./etcdget.sh "/vpn/config/worker_subnet")
-  cluster_subnet=$(cd /config/scripts && ./etcdget.sh "/vpn/config/cluster_subnet")
+  ip=$(cd /service/scripts && ./get-worker-fixed-ip.sh "${worker_name}")
+  worker_subnet=$(cd /service/scripts && ./etcdget.sh "/vpn/config/worker_subnet")
+  cluster_subnet=$(cd /service/scripts && ./etcdget.sh "/vpn/config/cluster_subnet")
 
   #  printf "%s\n" "WORKER_IP=5.0.0.5"
   #  printf "%s\n" "WORKER_SUBNET=5.0.0.0/8"
@@ -30,9 +28,7 @@ function worker_connect() {
 }
 
 function get_masters() {
-  cd /config/scripts
-
-  masters=$(cd /config/scripts && ./get-masters-public-ip.sh)
+  masters=$(cd /service/scripts && ./get-masters-public-ip.sh)
   printf "%s\n" "${masters}"
 }
 

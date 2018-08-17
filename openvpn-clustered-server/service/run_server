@@ -42,7 +42,7 @@ fi
 
 # Start worker API endpoint
 #--------------------------
-/config/run-worker-endpoint.sh &
+/service/run-worker-endpoint.sh &
 pid2=$!
 status=$?
 if [ $status -ne 0 ]; then
@@ -52,7 +52,7 @@ fi
 
 # Start etcd worker watcher
 #--------------------------
-/config/run-etcd-worker-watcher.sh &
+/service/run-etcd-worker-watcher.sh &
 pid3=$!
 status=$?
 if [ $status -ne 0 ]; then
@@ -62,7 +62,7 @@ fi
 
 # Start periodic full worker sync
 #--------------------------------
-/config/run-periodic-full-worker-sync.sh &
+/service/run-periodic-full-worker-sync.sh &
 pid4=$!
 status=$?
 if [ $status -ne 0 ]; then
@@ -73,7 +73,7 @@ fi
 
 # Start etcd pki watcher
 #--------------------------
-/config/run-etcd-pki-watcher.sh &
+/service/run-etcd-pki-watcher.sh &
 pid5=$!
 status=$?
 if [ $status -ne 0 ]; then
@@ -83,7 +83,7 @@ fi
 
 # Start periodic pki sync
 #--------------------------------
-/config/run-periodic-sync-pki.sh &
+/service/run-periodic-sync-pki.sh &
 pid6=$!
 status=$?
 if [ $status -ne 0 ]; then

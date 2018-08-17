@@ -8,7 +8,7 @@ trap "exit" INT
 while true; do
 
   # when anything of pki updates in etcd, force a sync of the pki data
-  cd /config/scripts
+  cd /service/scripts
   ./etcdwatch.sh "/vpn/pki" './sync-pki.sh'
 
   sleep 1

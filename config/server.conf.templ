@@ -26,8 +26,8 @@ dev tap0
 
 # setup the client-connect and client-disconnect scripts
 script-security 2
-client-connect /config/server-client-connect.sh
-client-disconnect /config/server-client-disconnect.sh
+client-connect /service/server-client-connect.sh
+client-disconnect /service/server-client-disconnect.sh
 # The user & group that can run the scripts and openvpn de-escalates to
 user root
 group root

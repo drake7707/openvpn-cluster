@@ -5,7 +5,6 @@ vpn_gateway=192.168.1.1
 api_server_container_ip=localhost
 VPN_PUBLIC_PORT=1194
 SERVER_DATA_DIR=`pwd`/m1
-VPN_PUBLIC_IP=10.10.127.41
 VPN_WORKER_FIXED_BASE_IP=5.0.0.0
 
 docker run -d \

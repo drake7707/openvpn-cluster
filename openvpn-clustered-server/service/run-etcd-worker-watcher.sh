@@ -7,7 +7,7 @@ trap "exit" INT
 
 while true; do
 
-  cd /config/scripts
+  cd /service/scripts
   ./etcdwatch.sh "/vpn/workers/" './update-worker-route.sh "${ETCD_WATCH_VALUE}"'
 
   sleep 1

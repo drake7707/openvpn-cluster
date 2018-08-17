@@ -13,19 +13,19 @@ if [[ "${client_name}" != "${client_name#worker-}" ]]; then # if the prefix is a
   # this client is a worker
 
   # update the etcd worker table
-  (cd /config/scripts && /config/scripts/update-worker-table.sh disconnect ${client_name#worker-}) &
+  (cd /service/scripts && /service/scripts/update-worker-table.sh disconnect ${client_name#worker-}) &
 
   # update the worker routes
-  (cd /config/scripts && /config/scripts/update-worker-routes.sh ${client_name#worker-}) &
+  (cd /service/scripts && /service/scripts/update-worker-routes.sh ${client_name#worker-}) &
 
 elif [[ "${client_name}" != "${client_name#master-}" ]]; then
   # this client is a foreign master
 
   # update the route for the master
 
-  cd /config/scripts
+  cd /service/scripts
   export master_name=${client_name#master-}
-  /config/scripts/remove-master-route.sh "${master_name}" &
+  /service/scripts/remove-master-route.sh "${master_name}" &
 
 else
   # this client is something else, probably a client config for an admin
